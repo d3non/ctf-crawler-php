@@ -86,7 +86,7 @@ class TimedTargetStore extends TargetStore {
 	protected $cycle_start=0;
 	protected $cycle_time=0;
 
-	public function __construct($target_list,$cycle_time,$autostart=TRUE,$flock_file="") {
+	public function __construct($target_list,$cycle_time,$autostart=FALSE,$flock_file="") {
 		parent::__construct($target_list,$flock_file);
 		$this->cycle_time=$cycle_time;
 		if($autostart)
@@ -97,6 +97,7 @@ class TimedTargetStore extends TargetStore {
 		parent::_cycle();
 		$wakeup = $this->cycle_start + $this->cycle_time;
 		$now = microtime(TRUE);
+		echo "cycle end / cnt(".count($this->targets).";{$this->cycle_start};{$now})\n";
 		while($now<$wakeup) {
 			usleep(1000000*($wakeup-$now));
 			$now=microtime(TRUE);
@@ -107,7 +108,7 @@ class TimedTargetStore extends TargetStore {
 	public function _start() {
 	#if there is a long delay between instanting and running, you should create this store with autocstart=FALSE and call this function before you start
 		if($this->getLock()) {
-			if($this->cycle_start != 0)
+			if($this->cycle_start == 0)
 				$this->cycle_start = microtime(TRUE);
 			$this->freeLock();
 		}
