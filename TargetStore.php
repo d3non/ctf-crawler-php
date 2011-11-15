@@ -97,7 +97,6 @@ class TimedTargetStore extends TargetStore {
 		parent::_cycle();
 		$wakeup = $this->cycle_start + $this->cycle_time;
 		$now = microtime(TRUE);
-		echo "cycle end / cnt(".count($this->targets).";{$this->cycle_start};{$now})\n";
 		while($now<$wakeup) {
 			usleep(1000000*($wakeup-$now));
 			$now=microtime(TRUE);
