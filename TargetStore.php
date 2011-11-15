@@ -3,11 +3,13 @@
 /*
 
 harhar - nice shit of code this class is! butem, can we use it? NOOOO!
-why? we need sysvsem enabled, what can only be done on compile time with --enable-sysvsem
-and nearly none distribution has packages with it.
+why? we need sysvsem enabled, or load the appropriate module (sysvsem.so) in php.ini
 
 so I added an alternative "locking" mechanism: NONE. (aka stupid) it does no locking at all.
 so you can use this store, but must take care that an instance of this store is used by one thread only!
+(and therefore its quite useless)
+
+aditionally we have to use sysvshm's shared memory because php does not have threading - it uses fork -> new process!
 
 */
 
@@ -105,7 +107,7 @@ class TimedTargetStore extends TargetStore {
 	}
 
 	public function _start() {
-	#if there is a long delay between instanting and running, you should create this store with autocstart=FALSE and call this function before you start
+	#if there is a long delay between instanting and running, you should create this store with autostart=FALSE and call this function before you start
 		if($this->getLock()) {
 			if($this->cycle_start == 0)
 				$this->cycle_start = microtime(TRUE);

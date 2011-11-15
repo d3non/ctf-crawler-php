@@ -4,7 +4,7 @@ require_once('TargetStore.php');
 
 abstract class CTFCrawler {
 
-	/* MultiThreadingMode: in wich mode will we "share" the targets */
+	/* MultiThreadingMode: in wich mode will we "share" the targets and PiP */
 	const MTM_SPLIT = 0;
 	const MTM_SHM = 1;
 
@@ -19,7 +19,7 @@ abstract class CTFCrawler {
 	protected $f_submitter;
 
 	public function __construct($conf,$targets,$pip,$threads=1,$cycle_time=5) {
-		if(function_exists('shm_attach'))
+		if(function_exists('shm_attach') AND function_exists('sem_get'))
 			$this->MTMmode = self::MTM_SHM;
 		else	$this->MTMmode = self::MTM_SPLIT;
 		
