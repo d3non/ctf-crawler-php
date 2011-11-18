@@ -8,8 +8,9 @@ abstract class PathinfoProvider {
 		return strpos($path,$base) !== FALSE;
 	}
 
-	public static function filter_base($pathinfo,$base) {
-		return array_filter(array_walk($pathinfo,array('static','_containsBase_callback')));
+	public static function filterBase($pathinfo,$base) {
+		array_walk($pathinfo,array('static','_containsBase_callback'));
+		return array_filter($pathinfo);
 	}
 
 	protected static function _stripBase_callback($path,$base) {
@@ -36,6 +37,36 @@ class DummyPiP extends PathinfoProvider {
 	}
 }
 
+class LocalPiP extends PathinfoProvider {
+
+	protected $pipFile;
+
+	public function __construct($pipFile) {
+		$this->pipFile = $pipFile;
+	}
+
+	public function getVisitedElements($pathinfo,$strip=TRUE) {
+		$fp = fopen($this->pipFile,'r');
+		$lines=array();
+		while(!feof($fp))
+			$lines[] = fgets($fp);
+		fclose($fp);
+		$lines=$this->filterBase($lines,$pathinfo);
+		if($strip)
+			$lines=$this->stripBase($lines,$pathinfo);
+		return $lines;
+	}
+	
+	public function addVisited($pathinfo) {
+		$fp = fopen($this->pipFile,'a');
+		if($fp) {
+			fputs($fp,$pathinfo);
+			fclose($fp);
+			return true;
+		}
+		return false;
+	}
+}
 
 class MySQLPiP extends PathinfoProvider {
 
