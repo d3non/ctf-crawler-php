@@ -9,13 +9,13 @@ define('VERBOSE',true);
 class TestCrawler extends CTFHTTPCrawler {
 
 	protected function _process($target) {
-		echo "processing target: ".print_r($target,true)."\n";
+		echo $this->name.") processing target: ".print_r($target,true)."\n";
 		$resph=array();
 		$cont = $this->ht_get($target,'/',NULL,NULL,&$resph);
 		echo "hier kommen die header:\n";
 		print_r($resph);
-		echo "und nun der content:\n";
-		echo $cont;
+#		echo "und nun der content:\n";
+#		echo $cont;
 		echo "\n\n\n FERTIG!";
 
 /*		$s = $this->connect($target);
@@ -35,8 +35,9 @@ date_default_timezone_set('Europe/Berlin');
 
 $submitConf = array('server'=>'127.0.0.1','port'=>50001,'service'=>'test');
 
-$targets = array(TestCrawler::mkTargetArray('www.heise.de',80,3));
+$targets = array(TestCrawler::mkTargetArray('www.heise.de',80,3),TestCrawler::mkTargetArray('www.google.de',80,3),TestCrawler::mkTargetArray('www.golem.de',80,3),
+TestCrawler::mkTargetArray('blog.fefe.de',80,3),TestCrawler::mkTargetArray('www.heise.de',80,3));
 
-$crawler = new TestCrawler($submitConf,$targets,new DummyPiP(),1,45);
+$crawler = new TestCrawler($submitConf,$targets,new DummyPiP(),2,45);
 
 $crawler->start();

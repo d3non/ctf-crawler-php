@@ -24,7 +24,7 @@ abstract class CTFCrawler {
 		else	$this->MTMmode = self::MTM_SPLIT;
 		
 		#TODO: remove this ;) (if MTM_SHM is ready)
-		$this->MTMmode = self::MTM_SPLIT;
+	#	$this->MTMmode = self::MTM_SPLIT;
 		
 		switch($this->MTMmode) {
 			case self::MTM_SHM:
@@ -68,17 +68,10 @@ abstract class CTFCrawler {
 	}
 
 	protected function run() {
-	#	$this->connect_submitter();
+		$this->connect_submitter();
 		while($target = $this->store->get())
 			$this->_process($target);
-	#	$this->disconnect_submitter();
-	}
-
-	protected function stopChilds() {
-		foreach($this->threads as $t) {
-			echo "killing PID:$t\n";
-			posix_kill($t,SIGTERM);
-		}
+		$this->disconnect_submitter();
 	}
 
 

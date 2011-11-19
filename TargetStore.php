@@ -2,14 +2,7 @@
 
 /*
 
-harhar - nice shit of code this class is! butem, can we use it? NOOOO!
-why? we need sysvsem enabled, or load the appropriate module (sysvsem.so) in php.ini
-
-so I added an alternative "locking" mechanism: NONE. (aka stupid) it does no locking at all.
-so you can use this store, but must take care that an instance of this store is used by one thread only!
-(and therefore its quite useless)
-
-aditionally we have to use sysvshm's shared memory because php does not have threading - it uses fork -> new process!
+you realy want to use this class with sysvsem and sysvshm enabled!
 
 */
 
@@ -19,30 +12,60 @@ class TargetStore {
 	const SEMAPHORE = 0;
 
 	protected $semaphore;
+	protected $SHM;
 	protected $lock_type;
 	protected $targets;
 	protected $target_len = 0;
 	protected $target_ptr = 0;
+	
+	protected $shared_vars = array('instant_cnt','target_ptr','targets');
+	private $instant_cnt = 0;
 
 	public function __construct($target_list,$flock_file="") {
-		if(function_exists('sem_get'))
+		if(function_exists('sem_get') AND function_exists('shm_attach'))
 			$this->lock_type = self::SEMAPHORE;
 		else	$this->lock_type = self::NONE;
+		$this->targets = array_values($target_list);
+		$this->target_len = count($target_list);
+		$this->instant_cnt++;
 		switch($this->lock_type) {
 			case self::SEMAPHORE:
-				$this->semaphore = sem_get(hexdec(md5("TargetStore"+time())));
+				$semID = hexdec(md5("TargetStore"+time()));
+				$this->semaphore = sem_get($semID);
+				$this->SHM = shm_attach($semID,1024*500,0660);
+				foreach($this->shared_vars as $i => $var) #copy vars from local mem to shared mem
+					shm_put_var($this->SHM,$i,$this->$var);
 				break;
 			default: /* aka self::NONE */
 				
 		}
-		$this->targets = array_values($target_list);
-		$this->target_len = count($target_list);
+	}
+
+	public function _copyed() { #could be called if we (aka process) are copyed (aka forked), and ONLY then!
+		if($this->getLock()) {
+			$this->instant_cnt++;
+			$this->freeLock();
+		}
+	}
+
+	public function __destruct() {
+		if($this->getLock()) {
+			$this->instant_cnt--;
+			$this->freeLock();
+			shm_detach($this->SHM);
+			if($this->instant_cnt<=0)
+				shm_remove($this->SHM);
+		}
 	}
 
 	protected function getLock() {
 		switch($this->lock_type) {
 			case self::SEMAPHORE:
-				return sem_acquire($this->semaphore);
+				if(sem_acquire($this->semaphore)) {
+					foreach($this->shared_vars as $i => $var) #copy vars from shared mem to local
+						$this->$var = shm_get_var($this->SHM,$i);
+					return TRUE;
+				} else return FALSE;
 				break;
 			case self::NONE:
 				return true;
@@ -53,7 +76,11 @@ class TargetStore {
 	protected function freeLock() {
 		switch($this->lock_type) {
 			case self::SEMAPHORE:
-				return sem_release($this->semaphore);
+				if(sem_release($this->semaphore)) {
+					foreach($this->shared_vars as $i => $var) #copy vars from local mem to shared mem
+						shm_put_var($this->SHM,$i,$this->$var);
+					return TRUE;
+				} else return FALSE;
 				break;
 			case self::NONE:
 				return true;
